@@ -30,20 +30,30 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting up CP Tracker API…")
 
-    # Warm up Redis
-    redis = await get_redis()
-    await redis.ping()
-    logger.info("Redis connected.")
+    # --- Redis (safe handling) ---
+    try:
+        redis = await get_redis()
+        await redis.ping()
+        logger.info("Redis connected.")
+    except Exception as e:
+        logger.warning(f"Redis not available: {e}")
 
-    # Create tables (dev — use Alembic in production)
+    # --- Database init (dev only) ---
     if settings.DEBUG:
-        await init_db()
-        logger.info("Database tables ensured.")
+        try:
+            await init_db()
+            logger.info("Database tables ensured.")
+        except Exception as e:
+            logger.error(f"DB init failed: {e}")
 
     yield
 
-    # Shutdown
-    await close_redis()
+    # --- Shutdown ---
+    try:
+        await close_redis()
+    except Exception:
+        pass
+
     logger.info("Shutdown complete.")
 
 
@@ -67,7 +77,7 @@ def create_app() -> FastAPI:
     # --- Middleware ---------------------------------------------------
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origins=settings.ALLOWED_ORIGINS or ["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -85,12 +95,14 @@ def create_app() -> FastAPI:
     # --- Health check -------------------------------------------------
     @app.get("/health", tags=["Health"])
     async def health():
+        redis_ok = False
         try:
             redis = await get_redis()
             await redis.ping()
             redis_ok = True
         except Exception:
-            redis_ok = False
+            pass
+
         return JSONResponse(
             content={
                 "status": "ok" if redis_ok else "degraded",
