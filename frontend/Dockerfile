@@ -22,7 +22,7 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx config template
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY ./nginx.conf /etc/nginx/templates/default.conf.template
 
 # Expose (not mandatory but fine)
 EXPOSE 80
