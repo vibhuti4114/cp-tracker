@@ -23,4 +23,4 @@ USER appuser
 EXPOSE 8000
 
 # Run FastAPI properly (Railway compatible)
-CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
+CMD ["sh", "-c", "alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"]

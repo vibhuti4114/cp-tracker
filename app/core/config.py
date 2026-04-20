@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     CODEFORCES_API_SECRET: str = ""
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    ALLOWED_ORIGINS: List[str] = ["*"]
 
     class Config:
         env_file = ".env"
