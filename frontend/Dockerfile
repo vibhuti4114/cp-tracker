@@ -1,9 +1,11 @@
+# ----------------------
 # Build stage
+# ----------------------
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files from frontend folder
+# Copy package files
 COPY frontend/package*.json ./
 RUN npm install
 
@@ -17,15 +19,19 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 
+# ----------------------
 # Serve stage
+# ----------------------
 FROM nginx:alpine
 
 # Copy build output
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx template (IMPORTANT)
+COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 
+# Expose port (Railway ignores but fine)
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Start nginx with Railway PORT
+CMD ["sh", "-c", "envsubst '$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
